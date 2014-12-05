@@ -169,7 +169,7 @@ int main(int argc, char **argv){
 				depthInfo.height=frame.getHeight();
 
 				depthInfo.K[0]=depthInfo.width/(2*tan(depth.getHorizontalFieldOfView()/2)); //fx
-				depthInfo.K[5]=depthInfo.height/(2*tan(depth.getVerticalFieldOfView()/2));; //fy
+				depthInfo.K[4]=depthInfo.height/(2*tan(depth.getVerticalFieldOfView()/2));; //fy
 				depthInfo.K[2]=depthInfo.width/2; //cx
 				depthInfo.K[6]=depthInfo.height/2; //cy
 				depthInfo.K[8]=1;
@@ -196,7 +196,7 @@ int main(int argc, char **argv){
 				colorInfo.height=colorframe.getHeight();
 
 				colorInfo.K[0]=colorInfo.width/(2*tan(color.getHorizontalFieldOfView()/2)); //fx
-				colorInfo.K[5]=colorInfo.height/(2*tan(color.getVerticalFieldOfView()/2));; //fy
+				colorInfo.K[4]=colorInfo.height/(2*tan(color.getVerticalFieldOfView()/2));; //fy
 				colorInfo.K[2]=colorInfo.width/2; //cx
 				colorInfo.K[6]=colorInfo.height/2; //cy
 				colorInfo.K[8]=1;
