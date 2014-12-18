@@ -13,7 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
 include_directories(~/src/OpenNI2/Include)
 include_directories(~/src/OpenNI2/Samples/Common/)
 include_directories(~/src/OpenNI2/Include/Linux-Arm)
-link_directories(/home/pi/src/OpenNI2/Bin/Arm-Release)
+link_directories(/home/bananapi/src/OpenNI2/Bin/Arm-Release)
 
 catkin_package(
 #  INCLUDE_DIRS include

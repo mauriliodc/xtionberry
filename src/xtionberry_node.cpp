@@ -17,12 +17,14 @@ int main(int argc, char **argv){
 
 	string topic;
 	string frame_id;
-	int resolution;
+	int _depthMode;
+	int _colorMode;
 	int rate;
 	int _depth;
 	int _rgb;
 	int _registration;
 	int _sync;
+	int _modes;
 
 	printf("starting\n");
 	fflush(stdout);
@@ -34,9 +36,11 @@ int main(int argc, char **argv){
 	//Resolution
 	//0 = 160x120
 	//1 = 320x240
-	n.param("resolution", resolution, 1);
+	n.param("depthMode", _depthMode, 0);
+	n.param("colorMode", _colorMode, 0);
 	n.param("depth", _depth, 1);
 	n.param("sync", _sync, 0);
+	n.param("modes", _modes, 0);
 	n.param("rgb", _rgb, 0);
 	n.param("registration", _registration,0);
 	n.param("rate", rate, 30);
@@ -53,7 +57,9 @@ int main(int argc, char **argv){
 	printf("_sync:= %d\n",_sync);
 	printf("_registration:= %d\n",_registration);
 	printf("_rgb:= %d\n",_rgb);
-	printf("_resolution:= %d\n",resolution);
+	printf("_depthMode:= %d\n",_depthMode);
+	printf("_colorMode:= %d\n",_colorMode);
+	printf("_modes:= %d\n",_modes);
 	printf("_rate:= %d\n",rate);
 	printf("_frame_id:= %s\n",frame_id.c_str());
 	fflush(stdout);
@@ -92,6 +98,7 @@ int main(int argc, char **argv){
 		fflush(stdout);
 		return 2;
 	}
+	
 
 	if(_depth==1){
 		if (device.getSensorInfo(SENSOR_DEPTH) != NULL){
@@ -117,20 +124,58 @@ int main(int argc, char **argv){
 		}
 
 	}
+	
+
+
+	if(_depth==1 && _rgb==1 && _sync==1){
+		rc =device.setDepthColorSyncEnabled(true);
+		if (rc != STATUS_OK) {
+			printf("Couldn't enable depth and color images synchronization\n%s\n",
+			OpenNI::getExtendedError());
+			exit(2);
+		}
+	}
+
 
 	if(_depth==1 && _rgb==1 && _registration==1){
 		device.setImageRegistrationMode(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR);
 	}
 
-	if(_depth==1 && _rgb==1 && _sync==1){
-		device.setDepthColorSyncEnabled(true);
+
+	if(_modes==1){
+	    cout << "Depth modes" << endl;
+	    const openni::SensorInfo* sinfo = device.getSensorInfo(openni::SENSOR_DEPTH); // select index=4 640x480, 30 fps, 1mm
+	    const openni::Array< openni::VideoMode>& modesDepth = sinfo->getSupportedVideoModes();
+
+	    printf("Enums data:\nPIXEL_FORMAT_DEPTH_1_MM = 100,\nPIXEL_FORMAT_DEPTH_100_UM = 101,\nPIXEL_FORMAT_SHIFT_9_2 = 102,\nPIXEL_FORMAT_SHIFT_9_3 = 103,\nPIXEL_FORMAT_RGB888 = 200,\nPIXEL_FORMAT_YUV422 = 201,\nPIXEL_FORMAT_GRAY8 = 202,\nPIXEL_FORMAT_GRAY16 = 203,\nPIXEL_FORMAT_JPEG = 204,\nPIXEL_FORMAT_YUYV = 205,\n\n");
+	    cout << "Depth modes" << endl;
+	    for (int i = 0; i<modesDepth.getSize(); i++) {
+        	printf("%i: %ix%i, %i fps, %i format\n", i, modesDepth[i].getResolutionX(), modesDepth[i].getResolutionY(),modesDepth[i].getFps(), modesDepth[i].getPixelFormat()); //PIXEL_FORMAT_DEPTH_1_MM = 100, PIXEL_FORMAT_DEPTH_100_UM = 101
+    		}
+
+	    cout << "Color modes" << endl;
+	    const openni::SensorInfo* sinfoColor = device.getSensorInfo(openni::SENSOR_COLOR); // select index=4 640x480, 30 fps, 1mm
+	    const openni::Array< openni::VideoMode>& modesColor = sinfoColor->getSupportedVideoModes();
+	    for (int i = 0; i<modesColor.getSize(); i++) {
+        	printf("%i: %ix%i, %i fps, %i format\n", i, modesColor[i].getResolutionX(), modesColor[i].getResolutionY(),modesColor[i].getFps(), modesColor[i].getPixelFormat()); //PIXEL_FORMAT_DEPTH_1_MM = 100, PIXEL_FORMAT_DEPTH_100_UM
+    		}
+	    depth.stop();
+	    depth.destroy();
+	    color.stop();
+	    color.destroy();
+	    device.close();
+   	    OpenNI::shutdown();	
+	    exit(1);
 	}
 	
-	if(resolution==1){
-		if(_depth){
-			rc = depth.setVideoMode(device.getSensorInfo(SENSOR_DEPTH)->getSupportedVideoModes()[0]);
-		}
+	
+	if(_depth){
+		rc = depth.setVideoMode(device.getSensorInfo(SENSOR_DEPTH)->getSupportedVideoModes()[_depthMode]);
 	}
+	if(_rgb){
+		rc = color.setVideoMode(device.getSensorInfo(SENSOR_COLOR)->getSupportedVideoModes()[_colorMode]);
+	}
+
 	if(_depth){
 		depth.setMirroringEnabled(false);
 		rc = depth.start();
@@ -139,6 +184,19 @@ int main(int argc, char **argv){
 		color.setMirroringEnabled(false);
 		rc = color.start();
 	}
+
+        if(_depth==1 && _rgb==1 && _sync==1){
+        rc =device.setDepthColorSyncEnabled(true);
+                if (rc != STATUS_OK) {
+                        printf("Couldn't enable depth and color images synchronization\n%s\n",
+                        OpenNI::getExtendedError());
+                        exit(2);
+                }
+                else{
+                        printf("sync enabled!\n");
+                }
+        }
+
 
 	VideoFrameRef frame;
 	VideoFrameRef colorframe;
@@ -171,7 +229,7 @@ int main(int argc, char **argv){
 				depthInfo.K[0]=depthInfo.width/(2*tan(depth.getHorizontalFieldOfView()/2)); //fx
 				depthInfo.K[4]=depthInfo.height/(2*tan(depth.getVerticalFieldOfView()/2));; //fy
 				depthInfo.K[2]=depthInfo.width/2; //cx
-				depthInfo.K[6]=depthInfo.height/2; //cy
+				depthInfo.K[5]=depthInfo.height/2; //cy
 				depthInfo.K[8]=1;
 
 				image.header.frame_id="/"+frame_id+"_depth";
@@ -198,7 +256,7 @@ int main(int argc, char **argv){
 				colorInfo.K[0]=colorInfo.width/(2*tan(color.getHorizontalFieldOfView()/2)); //fx
 				colorInfo.K[4]=colorInfo.height/(2*tan(color.getVerticalFieldOfView()/2));; //fy
 				colorInfo.K[2]=colorInfo.width/2; //cx
-				colorInfo.K[6]=colorInfo.height/2; //cy
+				colorInfo.K[5]=colorInfo.height/2; //cy
 				colorInfo.K[8]=1;
 	
 				image.header.frame_id="/"+frame_id+"_color";
@@ -214,6 +272,7 @@ int main(int argc, char **argv){
 			default:
 				printf("Error in wait\n");
 			}
+			std::cout.flush();
 			ros::spinOnce();
 			loop_rate.sleep();
 	}
